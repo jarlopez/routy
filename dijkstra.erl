@@ -3,6 +3,7 @@
           entry/2
          ,replace/4
          ,update/4
+         ,iterate/3
          ]).
 
 % Returns the length of the shortest path to the
@@ -40,6 +41,11 @@ update(Node, N, Gateway, Sorted) ->
             % io:format("NOT updating because path ~p shorter than old ~p~n", [N, Res]),
             Sorted
     end.
+
+% Construct a table given a sorted list
+% of nodes, a map and a table constructed so far.
+iterate(Sorted, Map, Table) ->
+    true.
 
 % Helper functions
 

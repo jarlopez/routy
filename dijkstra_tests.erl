@@ -4,7 +4,8 @@
 run() ->
     test_entry(),
     test_replace(),
-    test_update().
+    test_update(),
+    test_iterate().
 
 test_entry() ->
     io:format("test_entry()~n"),
@@ -21,6 +22,7 @@ test_replace() ->
         {berlin, 1, paris},
         {beta, 3, theta}
     ]).
+
 test_update() ->
     SortedList = [
         {berlin, 1, paris},
@@ -38,3 +40,8 @@ test_update() ->
     test:print_case("Shorter new path", dijkstra:update(beta, 1, theta, SortedList), UpdatedList),
     test:print_case("Empty list", dijkstra:update(london, 2, amsterdam, []), []),
     test:print_case("Update & change", dijkstra:update(london, 1, stockholm, [{berlin, 2, paris}, {london, 3, paris}]), [{london,1,stockholm}, {berlin, 2, paris}]).
+
+test_iterate() ->
+    io:format("test_iterate()~n"),
+    test:print_case("",
+    dijkstra:iterate([{paris, 0, paris}, {berlin, inf, unknown}], [{paris, [berlin]}], []), [{paris, paris},{berlin,paris}]).
