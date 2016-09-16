@@ -8,15 +8,16 @@
 new(Node) ->
     [{Node, 0}].
 
+%TODO Verify below functionality
 update(Node, N, History) ->
     case lists:keyfind(Node, 1, History) of
         {Node, Age} ->
             if
                 Age < N ->
-                    new;
+                    {new, lists:keystore(Node, 1, History, {Node, N})};
                 true ->
                     old
             end;
         false ->
-            not_found
+            {new, lists:keystore(Node, 1, History, {Node, 0})}
     end.
