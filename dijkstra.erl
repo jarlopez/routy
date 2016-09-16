@@ -52,7 +52,7 @@ iterate([{Node, N, Gateway} | T], Map, Table) ->
     Reachable = map:reachable(Node, Map),
     NewList = lists:foldl(fun(El, Acc) ->
         Dist = N + 1,
-        update(El, Dist, Node, Acc)
+        update(El, Dist, Gateway, Acc)
     end, T, Reachable),
     iterate(NewList, Map, [ {Node, Gateway} | Table]).
 
