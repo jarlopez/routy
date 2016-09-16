@@ -2,10 +2,13 @@
 -export([run/0]).
 
 run() ->
+    io:format("======================[~20s]======================~n", [?MODULE]),
     test_entry(),
     test_replace(),
     test_update(),
-    test_iterate().
+    test_iterate(),
+    test_table(),
+    test_route().
 
 test_entry() ->
     io:format("test_entry()~n"),
@@ -44,4 +47,28 @@ test_update() ->
 test_iterate() ->
     io:format("test_iterate()~n"),
     test:print_case("",
-    dijkstra:iterate([{paris, 0, paris}, {berlin, inf, unknown}], [{paris, [berlin]}], []), [{paris, paris},{berlin,paris}]).
+        dijkstra:iterate(
+            [{paris, 0, paris}, {berlin, inf, unknown}],
+            [{paris, [berlin]}], []),
+        [{paris, paris},{berlin,paris}]
+    ).
+
+test_table() ->
+    io:format("test_table()~n"),
+    test:print_case("",
+        dijkstra:table(
+                       [paris, madrid],
+                       [{madrid,[berlin]}, {paris, [rome,madrid]}]),
+        [{berlin,madrid},{rome,paris},{madrid,madrid},{paris,paris}]
+    ).
+
+test_route() ->
+    Table = dijkstra:table(
+                [paris, madrid],
+                [{madrid,[berlin]}, {paris, [rome,madrid]}]),
+
+    io:format("test_table()~n"),
+    test:print_case("",
+        dijkstra:route(berlin, Table),
+        madrid
+    ).

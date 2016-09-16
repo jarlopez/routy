@@ -2,6 +2,7 @@
 -export([run/0]).
 
 run() ->
+    io:format("======================[~20s]======================~n", [?MODULE]),
     test_new(),
     test_update(),
     test_reachable(),
@@ -24,9 +25,9 @@ test_reachable() ->
     ],
 
     io:format("test_reachable()~n"),
-    test:print_case("not reachable", map:reachable(some_node, []), false),
-    test:print_case("reachable with links", map:reachable(stockholm, MultiEntryMap), {stockholm, [london, berlin, helsinki]}),
-    test:print_case("reachable w/o links", map:reachable(london, MultiEntryMap), {london, []}).
+    test:print_case("not reachable", map:reachable(some_node, []), []),
+    test:print_case("reachable with links", map:reachable(stockholm, MultiEntryMap), [london, berlin, helsinki]),
+    test:print_case("reachable w/o links", map:reachable(london, MultiEntryMap), []).
 
 test_all_nodes() ->
     SingleEntryMap = [{london, []}],

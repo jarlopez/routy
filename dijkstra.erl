@@ -1,9 +1,12 @@
 -module(dijkstra).
+-author("Johan Mickos johanmi@kth.se").
 -export ([
           entry/2
          ,replace/4
          ,update/4
          ,iterate/3
+         ,table/2
+         ,route/2
          ]).
 
 % Returns the length of the shortest path to the
@@ -11,7 +14,7 @@
 entry(Node, Sorted) ->
     El = lists:keyfind(Node, 1, Sorted),
     case El of
-        {Node, Distance, Gateway} ->
+        {_Node, Distance, _Gateway} ->
             Distance;
         _ ->
             0
@@ -53,7 +56,18 @@ iterate([{Node, N, Gateway} | T], Map, Table) ->
     end, T, Reachable),
     iterate(NewList, Map, [ {Node, Gateway} | Table]).
 
-% Helper functions
+table(Gateways, Map) ->
+    All = map:all_nodes(Map),
+    Initial = lists:map(fun(El) ->
+        {El, inf, unknown}
+    end, All),
+    Nodes = lists:foldl(fun(El, Acc) -> update(El, 0, El, Acc) end, Initial, Gateways),
+    iterate(Nodes, Map, []).
 
-sorting_helper({_, DistA, _}, {_, DistB, _}) ->
-    DistA < DistB.
+route(Node, Table) ->
+    case lists:keyfind(Node, 1, Table) of
+        {Node, Gateway} ->
+            Gateway;
+        false ->
+            unknown
+    end.
