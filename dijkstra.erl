@@ -1,6 +1,7 @@
 -module(dijkstra).
 -author("Johan Mickos johanmi@kth.se").
 -export ([
+         %TODO Only export table/2 and route/2
           entry/2
          ,replace/4
          ,update/4
