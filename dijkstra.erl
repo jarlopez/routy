@@ -23,29 +23,35 @@ entry(Node, Sorted) ->
 replace(Node, N, Gateway, Sorted) ->
     lists:sort(fun(A, B) -> sorting_helper(A, B) end, lists:keystore(Node, 1, Sorted, {Node, N, Gateway})).
 
+sorting_helper({_, DistA, _}, {_, DistB, _}) ->
+    DistA < DistB.
+
 % Update the list Sorted given
 % the information that Node can be reached in N hops using Gateway.
 % If no entry is found then no new entry is added. Only if we have a
 % better (shorter) path should we replace the existing entry.
 update(Node, N, Gateway, Sorted) ->
-    Res = entry(Node, Sorted),
-    case Res of
-        0 ->
-            % Path does not exist, do nothing and return Sorted
-            % io:format("Path doesnt exist~n"),
-            Sorted;
-        Res when N < Res->
-            % io:format("Updating because path ~p shorter than old ~p~n", [N, Res]),
+    case entry(Node, Sorted) of
+        Dist when N < Dist ->
             replace(Node, N, Gateway, Sorted);
-        _ ->
-            % io:format("NOT updating because path ~p shorter than old ~p~n", [N, Res]),
+        _Dist ->
             Sorted
     end.
 
 % Construct a table given a sorted list
 % of nodes, a map and a table constructed so far.
-iterate(Sorted, Map, Table) ->
-    true.
+iterate([], _, Table) ->
+    Table;
+iterate([{ _, inf, _ } | _], _, Table) ->
+    Table;
+iterate([{Node, N, Gateway} | T], Map, Table) ->
+    Reachable = map:reachable(Node, Map),
+    NewList = lists:foldl(fun(El, Acc) ->
+        Dist = N + 1,
+        Thing = update(El, Dist, Node, Acc),
+        Thing
+    end, T, Reachable),
+    iterate(NewList, Map, [ {Node, Gateway} | Table]).
 
 % Helper functions
 

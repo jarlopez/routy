@@ -13,7 +13,12 @@ update(Node, Links, Map) ->
     lists:keystore(Node, 1, Map, {Node, Links}).
 
 reachable(Node, Map) ->
-    lists:keyfind(Node, 1, Map).
+    case lists:keyfind(Node, 1, Map) of
+        {Node, Links} ->
+            Links;
+        _ ->
+            []
+    end.
 
 % Returns a list of _all_ nodes in the Map,
 % even the ones without outgoing lists
