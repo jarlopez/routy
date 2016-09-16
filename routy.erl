@@ -28,7 +28,8 @@ bootstrap() ->
     r2 ! {add, malmo, {r3, Ip}},
     r1 ! broadcast,
     r2 ! broadcast,
-    r3 ! broadcast.
+    r3 ! broadcast,
+    ok.
 
 cleanup() ->
     r1 ! stop,
@@ -53,10 +54,11 @@ send_status(Pid) ->
 router(Name, N, Hist, Intf, Table, Map) ->
     receive
         {add, Node, Pid} ->
-            io:format("[ADD @ ~p] ~p at ~p~n", [Name, Node, Pid]),
+            % io:format("[ADD @ ~p] ~p at ~p~n", [Name, Node, Pid]),
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node, Ref, Pid, Intf),
 
+            % Broadcast change to alert self, network
             Message = {links, Name, N, intf:list(Intf)},
             intf:broadcast(Message, Intf),
 
@@ -71,6 +73,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("~w: exit recived from ~w~n", [Name, Down]),
             Intf1 = intf:remove(Down, Intf),
 
+            % Update table with removed interface/node
             Table1 = dijkstra:table(intf:list(Intf1), Map),
 
             router(Name, N, Hist, Intf1, Table1, Map);
@@ -82,7 +85,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("[~p]~nN: ~p~nHist:~n~p~n~nIntf list: ~p~nTable:~n~p~n~nMap:~n~p~n~n", [Name, N, Hist, intf:list(Intf), Table, Map]),
             router(Name, N, Hist, Intf, Table, Map);
         {links, Node, R, Links} ->
-            io:format("[links @ ~p] ~p - ~p - ~p ~n", [Name, Node, R, Links]),
+            % io:format("[links @ ~p] ~p - ~p - ~p ~n", [Name, Node, R, Links]),
             case hist:update(Node, R, Hist) of
                 {new, Hist1} ->
                     intf:broadcast({links, Node, R, Links}, Intf),
@@ -99,7 +102,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("~w: received message ~p from ~w~n", [Name, Message, From]),
             router(Name, N, Hist, Intf, Table, Map);
         {route, To, From, Message} ->
-            io:format("~w: routing message (~p)", [Name, Message]),
+            % io:format("~w: routing message (~p)", [Name, Message]),
             case dijkstra:route(To, Table) of
                 {ok, Gw} ->
                     case intf:lookup(Gw, Intf) of
@@ -109,7 +112,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
                             ok
                     end;
                 not_found ->
-                    ok % :(
+                    ok % Drop packet
             end,
             router(Name, N, Hist, Intf, Table, Map);
         {send, To, Message} ->
@@ -119,7 +122,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             Table1 = dijkstra:table(intf:list(Intf), Map),
             router(Name, N, Hist, Intf, Table1, Map);
         broadcast ->
-            io:format("Broadcasting from ~p~n", [Name]),
+            % io:format("Broadcasting from ~p~n", [Name]),
             Message = {links, Name, N, intf:list(Intf)},
             intf:broadcast(Message, Intf),
             router(Name, N+1, Hist, Intf, Table, Map);
