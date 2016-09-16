@@ -22,13 +22,12 @@ bootstrap() ->
     start(r1, stockholm),
     start(r2, lund),
     start(r3, malmo),
-
     r1 ! {add, lund, {r2, Ip}},
     % NOTE: Need bidirectional communication to reveal to Stockholm that Lund can connect to Malmo
     r2 ! {add, stockholm, {r1, Ip}},
     r2 ! {add, malmo, {r3, Ip}},
-    r2 ! broadcast,
     r1 ! broadcast,
+    r2 ! broadcast,
     r3 ! broadcast.
 
 cleanup() ->
@@ -54,11 +53,14 @@ send_status(Pid) ->
 router(Name, N, Hist, Intf, Table, Map) ->
     receive
         {add, Node, Pid} ->
-            % TODO Shouldn't add also add to Map?
             io:format("[ADD @ ~p] ~p at ~p~n", [Name, Node, Pid]),
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node, Ref, Pid, Intf),
-            router(Name, N, Hist, Intf1, Table, Map);
+
+            Message = {links, Name, N, intf:list(Intf)},
+            intf:broadcast(Message, Intf),
+
+            router(Name, N + 1, Hist, Intf1, Table, Map);
         {remove, Node} ->
             {ok, Ref} = intf:ref(Node, Intf),
             erlang:demonitor(Ref),
@@ -68,7 +70,11 @@ router(Name, N, Hist, Intf, Table, Map) ->
             {ok, Down} = intf:name(Ref, Intf),
             io:format("~w: exit recived from ~w~n", [Name, Down]),
             Intf1 = intf:remove(Down, Intf),
-            router(Name, N, Hist, Intf1, Table, Map);
+
+            Table1 = dijkstra:table(intf:list(Intf1), Map),
+
+            router(Name, N, Hist, Intf1, Table1, Map);
+
         {status, From} ->
             From ! {status, {Name, N, Hist, Intf, Table, Map}},
             router(Name, N, Hist, Intf, Table, Map);
@@ -81,7 +87,11 @@ router(Name, N, Hist, Intf, Table, Map) ->
                 {new, Hist1} ->
                     intf:broadcast({links, Node, R, Links}, Intf),
                     Map1 = map:update(Node, Links, Map),
-                    router(Name, N, Hist1, Intf, Table, Map1);
+
+                    % Generate new shortest paths table
+                    Table1 = dijkstra:table(intf:list(Intf), Map1),
+
+                    router(Name, N, Hist1, Intf, Table1, Map1);
                 old ->
                     router(Name, N, Hist, Intf, Table, Map)
             end;
@@ -109,6 +119,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             Table1 = dijkstra:table(intf:list(Intf), Map),
             router(Name, N, Hist, Intf, Table1, Map);
         broadcast ->
+            io:format("Broadcasting from ~p~n", [Name]),
             Message = {links, Name, N, intf:list(Intf)},
             intf:broadcast(Message, Intf),
             router(Name, N+1, Hist, Intf, Table, Map);
