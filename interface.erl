@@ -12,25 +12,43 @@
          ]).
 
 new() ->
-    ok.
+    [].
 
 add(Name, Ref, Pid, Intf) ->
-    ok.
+    [{Name, Ref, Pid} | Intf].
 
 remove(Name, Intf) ->
-    ok.
+    lists:keydelete(Name, 1, Intf).
 
-lookkup(Name, Intf) ->
-    ok.
+lookup(Name, Intf) ->
+    case lists:keyfind(Name, 1, Intf) of
+        {Name, _Ref, Pid} ->
+            {ok, Pid};
+        false ->
+            not_found
+    end.
 
 ref(Name, Intf) ->
-    ok.
+    case lists:keyfind(Name, 1, Intf) of
+        {Name, Ref, _Pid} ->
+            {ok, Ref};
+        false ->
+            not_found
+    end.
 
-name(Name, Intf) ->
-    ok.
+name(Ref, Intf) ->
+    case lists:keyfind(Ref, 2 , Intf) of
+        {Name, Ref, _Pid} ->
+            {ok, Name};
+        false ->
+            not_found
+    end.
 
 list(Intf) ->
-    ok.
+    lists:map(fun({Name, _Ref, _Pid}) -> Name end, Intf).
 
 broadcast(Msg, Intf) ->
-    sok.
+    lists:map(fun({_Name, _Ref, Pid}) ->
+        Pid ! Msg
+    end, Intf),
+    ok.
