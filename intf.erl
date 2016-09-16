@@ -1,4 +1,4 @@
--module(interface).
+-module(intf).
 -author("Johan Mickos johanmi@kth.se").
 -export ([
           new/0

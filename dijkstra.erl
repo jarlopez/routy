@@ -52,8 +52,7 @@ iterate([{Node, N, Gateway} | T], Map, Table) ->
     Reachable = map:reachable(Node, Map),
     NewList = lists:foldl(fun(El, Acc) ->
         Dist = N + 1,
-        Thing = update(El, Dist, Node, Acc),
-        Thing
+        update(El, Dist, Node, Acc)
     end, T, Reachable),
     iterate(NewList, Map, [ {Node, Gateway} | Table]).
 
@@ -62,7 +61,9 @@ table(Gateways, Map) ->
     Initial = lists:map(fun(El) ->
         {El, inf, unknown}
     end, All),
-    Nodes = lists:foldl(fun(El, Acc) -> update(El, 0, El, Acc) end, Initial, Gateways),
+    Nodes = lists:foldl(fun(El, Acc) ->
+            update(El, 0, El, Acc)
+        end, Initial, Gateways),
     iterate(Nodes, Map, []).
 
 route(Node, Table) ->
