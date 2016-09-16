@@ -67,9 +67,10 @@ table(Gateways, Map) ->
     iterate(Nodes, Map, []).
 
 route(Node, Table) ->
+    io:format("Routing to ~p with\n~p\n", [Node, Table]),
     case lists:keyfind(Node, 1, Table) of
         {Node, Gateway} ->
-            Gateway;
+            {ok, Gateway};
         false ->
-            unknown
+            not_found
     end.
