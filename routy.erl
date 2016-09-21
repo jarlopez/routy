@@ -264,27 +264,12 @@ send_status(Pid) ->
 router(Name, N, Hist, Intf, Table, Map) ->
     receive
         {add, Node, Pid} ->
-            % TODO Shouldn't add also add to Map?
             io:format("[ADD @ ~p] ~p at ~p~n", [Name, Node, Pid]),
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node, Ref, Pid, Intf),
-
-            % Map1 = map:update(Name, intf:list(Intf1), Map),
-
-
-% <<<<<<< Updated upstream
             Message = {links, Name, N, intf:list(Intf1)},
             intf:broadcast(Message, Intf1),
             router(Name, N+1, Hist, Intf1, Table, Map);
-% =======
-
-%             % Broadcast change to alert self, network
-%             Message = {links, Name, N, intf:list(Intf)},
-%             intf:broadcast(Message, Intf1),
-
-%             router(Name, N + 1, Hist, Intf1, Table, Map);
-%             % router(Name, N, Hist, Intf1, Table, Map);
-% >>>>>>> Stashed changes
         {remove, Node} ->
             {ok, Ref} = intf:ref(Node, Intf),
             erlang:demonitor(Ref),
