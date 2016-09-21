@@ -17,25 +17,219 @@ stop(Node) ->
     Node ! stop,
     unregister(Node).
 
-bootstrap() ->
-    Ip = 'sweden@2001:6b0:1:1041:e888:f9d6:6ce6:bf413',
-    start(r1, stockholm),
-    start(r2, lund),
-    start(r3, malmo),
+restore(Node) ->
+    restore(Node, 'spion@2001:6b0:1:1041:e888:f9d6:6ce6:bf413').
 
-    r1 ! {add, lund, {r2, Ip}},
-    % NOTE: Need bidirectional communication to reveal to Stockholm that Lund can connect to Malmo
-    r2 ! {add, stockholm, {r1, Ip}},
-    r2 ! {add, malmo, {r3, Ip}},
-    r2 ! broadcast,
-    r1 ! broadcast,
-    r3 ! broadcast.
+start_all() ->
+    start(boston, boston),
+    start(new_york, new_york),
+    start(austin, austin),
+    start(san_francisco, san_francisco),
+    start(reykjavik, reykjavik),
+    start(nuuk, nuuk),
+    start(trondheim, trondheim),
+    start(oslo, oslo),
+    start(gothemburg, gothemburg),
+    start(stockholm, stockholm),
+    start(lund, lund),
+    start(copenhagen, copenhagen),
+    start(berlin, berlin),
+    start(paris, paris),
+    start(madrid, madrid),
+    start(helsinki, helsinki),
+    start(rovaniemi, rovaniemi),
+    start(moscow, moscow),
+
+    ok.
+
+
+restore(Node, Ip) ->
+    case Node of
+        boston ->
+            Connections = [austin, new_york, nuuk, reykjavik];
+        new_york ->
+            Connections = [austin, boston];
+        austin ->
+            Connections = [san_francisco, new_york, boston];
+        san_francisco ->
+            Connections = [austin];
+        reykjavik ->
+            Connections = [nuuk, boston, oslo, trondheim];
+        nuuk ->
+            Connections = [boston, reykjavik];
+        trondheim ->
+            Connections = [reykjavik, oslo, rovaniemi];
+        oslo ->
+            Connections = [reykjavik, trondheim, gothemburg, copenhagen];
+        gothemburg ->
+            Connections = [oslo, lund, stockholm];
+        stockholm ->
+            Connections = [gothemburg, lund, helsinki];
+        lund ->
+            Connections = [gothemburg, stockholm];
+        copenhagen ->
+            Connections = [oslo, berlin];
+        berlin ->
+            Connections = [copenhagen, paris, madrid, moscow];
+        paris ->
+            Connections = [madrid, berlin];
+        madrid ->
+            Connections = [paris, berlin];
+        helsinki ->
+            Connections = [rovaniemi, moscow, stockholm];
+        rovaniemi ->
+            Connections = [trondheim, helsinki];
+        moscow ->
+            Connections = [helsinki, berlin];
+        _ ->
+            Connections = []
+    end,
+    io:format("~p: ~p~n", [Node, Connections]),
+    % case whereis(Node) of
+    %     undefined ->
+    %         ok;
+    %     _Pid ->
+    %         stop(Node)
+    % end,
+    % start(Node, Node),
+    % Restart dependencies
+    lists:map(fun(El) ->
+        Node ! {add, El, {El, Ip}}
+        % El ! {add, Node, {Node, Ip}}
+    end, Connections).
+
+
+bootstrap() ->
+    Nodes = [
+        boston,
+        new_york,
+        austin,
+        san_francisco,
+        reykjavik,
+        oslo,
+        trondheim,
+        gothemburg,
+        stockholm,
+        nuuk,
+        copenhagen,
+        berlin,
+        paris,
+        madrid,
+        helsinki,
+        rovaniemi,
+        moscow
+    ],
+    start_all(),
+    lists:map(fun(El) -> restore(El) end, Nodes),
+
+    % io:format("Creating nodes\t\tUSA~n"),
+    % start(boston, boston),
+    % start(new_york, new_york),
+    % start(austin, austin),
+    % start(san_francisco, san_francisco),
+
+    % io:format("Creating nodes\t\tICELAND~n"),
+    % start(reykjavik, reykjavik),
+
+    % io:format("Creating nodes\t\tGREENLAND~n"),
+    % start(nuuk, nuuk),
+
+    % io:format("Creating nodes\t\tNORWAY~n"),
+    % start(trondheim, trondheim),
+    % start(oslo, oslo),
+
+    % io:format("Creating nodes\t\tSWEDEN~n"),
+    % start(gothemburg, gothemburg),
+    % start(stockholm, stockholm),
+    % start(lund, lund),
+
+    % io:format("Creating nodes\t\tDENMARK~n"),
+    % start(copenhagen, copenhagen),
+
+    % io:format("Creating nodes\t\tGERMANY~n"),
+    % start(berlin, berlin),
+
+    % io:format("Creating nodes\t\tFRANCE~n"),
+    % start(paris, paris),
+
+    % io:format("Creating nodes\t\tSPAIN~n"),
+    % start(madrid, madrid),
+
+    % io:format("Creating nodes\t\tFINLAND~n"),
+    % start(helsinki, helsinki),
+    % start(rovaniemi, rovaniemi),
+
+    % io:format("Creating nodes\t\tRUSSIA~n"),
+    % start(moscow, moscow),
+
+    % boston ! {add, new_york, {new_york, Ip}},
+    % boston ! {add, austin, {austin, Ip}},
+    % boston ! {add, reykjavik, {reykjavik, Ip}},
+    % boston ! {add, nuuk, {nuuk, Ip}},
+
+    % new_york ! {add, boston, {boston, Ip}},
+    % new_york ! {add, austin, {austin, Ip}},
+
+    % austin ! {add, san_francisco, {san_francisco, Ip}},
+    % austin ! {add, new_york, {new_york, Ip}},
+    % austin ! {add, boston, {boston, Ip}},
+
+    % san_francisco ! {add, austin, {austin, Ip}},
+
+    % nuuk ! {add, boston, {boston, Ip}},
+    % nuuk ! {add, reykjavik, {reykjavik, Ip}},
+
+    % reykjavik ! {add, boston, {boston, Ip}},
+    % reykjavik ! {add, trondheim, {trondheim, Ip}},
+    % reykjavik ! {add, oslo, {oslo, Ip}},
+    % reykjavik ! {add, nuuk, {nuuk, Ip}},
+
+    % trondheim ! {add, reykjavik, {reykjavik, Ip}},
+    % trondheim ! {add, oslo, {oslo, Ip}},
+    % trondheim ! {add, rovaniemi, {rovaniemi, Ip}},
+
+    % oslo ! {add, trondheim, {trondheim, Ip}},
+    % oslo ! {add, reykjavik, {reykjavik, Ip}},
+    % oslo ! {add, gothemburg, {gothemburg, Ip}},
+    % oslo ! {add, copenhagen, {copenhagen, Ip}},
+
+    % copenhagen ! {add, oslo, {oslo, Ip}},
+    % copenhagen ! {add, berlin, {berlin, Ip}},
+
+    % berlin ! {add, paris, {paris, Ip}},
+    % berlin ! {add, madrid, {madrid, Ip}},
+    % berlin ! {add, copenhagen, {copenhagen, Ip}},
+
+    % paris ! {add, madrid, {madrid, Ip}},
+    % paris ! {add, berlin, {berlin, Ip}},
+
+    % madrid ! {add, berlin, {berlin, Ip}},
+    % madrid ! {add, paris, {paris, Ip}},
+
+    % gothemburg ! {add, oslo, {oslo, Ip}},
+    % gothemburg ! {add, lund, {lund, Ip}},
+    % gothemburg ! {add, stockholm, {stockholm, Ip}},
+
+    % lund ! {add, stockholm, {stockholm, Ip}},
+    % lund ! {add, gothemburg, {gothemburg, Ip}},
+
+    % stockholm ! {add, gothemburg, {gothemburg, Ip}},
+    % stockholm ! {add, lund, {lund, Ip}},
+    % stockholm ! {add, helsinki, {helsinki, Ip}},
+
+    % helsinki ! {add, moscow, {moscow, Ip}},
+    % helsinki ! {add, rovaniemi, {rovaniemi, Ip}},
+    % helsinki ! {add, stockholm, {stockholm, Ip}},
+
+    % rovaniemi ! {add, trondheim, {trondheim, Ip}},
+    % rovaniemi ! {add, helsinki, {helsinki, Ip}},
+
+    % moscow ! {add, helsinki, {helsinki, Ip}},
+
+    ok.
 
 cleanup() ->
-    r1 ! stop,
-    r2 ! stop,
-    r3 ! stop.
-
+    ok.
 
 init(Name) ->
     Intf = intf:new(),
@@ -48,7 +242,7 @@ send_status(Pid) ->
     Pid ! {status, self()},
     receive
         Msg ->
-            io:format("[STATUS: ~p] ~p", [Pid, Msg])
+            io:format("[STATUS: ~p] ~p~n", [Pid, Msg])
     end.
 
 router(Name, N, Hist, Intf, Table, Map) ->
@@ -58,7 +252,23 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("[ADD @ ~p] ~p at ~p~n", [Name, Node, Pid]),
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node, Ref, Pid, Intf),
-            router(Name, N, Hist, Intf1, Table, Map);
+
+            % Map1 = map:update(Name, intf:list(Intf1), Map),
+
+
+% <<<<<<< Updated upstream
+            Message = {links, Name, N, intf:list(Intf1)},
+            intf:broadcast(Message, Intf1),
+            router(Name, N+1, Hist, Intf1, Table, Map);
+% =======
+
+%             % Broadcast change to alert self, network
+%             Message = {links, Name, N, intf:list(Intf)},
+%             intf:broadcast(Message, Intf1),
+
+%             router(Name, N + 1, Hist, Intf1, Table, Map);
+%             % router(Name, N, Hist, Intf1, Table, Map);
+% >>>>>>> Stashed changes
         {remove, Node} ->
             {ok, Ref} = intf:ref(Node, Intf),
             erlang:demonitor(Ref),
@@ -68,7 +278,20 @@ router(Name, N, Hist, Intf, Table, Map) ->
             {ok, Down} = intf:name(Ref, Intf),
             io:format("~w: exit recived from ~w~n", [Name, Down]),
             Intf1 = intf:remove(Down, Intf),
+% <<<<<<< Updated upstream
             router(Name, N, Hist, Intf1, Table, Map);
+% =======
+
+%             % Update table with removed interface/node
+%             Table1 = dijkstra:table(intf:list(Intf1), Map),
+
+%             % Broadcast change to alert self, network
+%             Message = {links, Name, N, intf:list(Intf1)},
+%             intf:broadcast(Message, Intf1),
+
+%             router(Name, N + 1, Hist, Intf1, Table1, Map);
+
+% >>>>>>> Stashed changes
         {status, From} ->
             io:format("Received status from: ~p~n", [From]),
             From ! {status, {Name, N, Hist, Intf, Table, Map}},
@@ -82,7 +305,8 @@ router(Name, N, Hist, Intf, Table, Map) ->
                 {new, Hist1} ->
                     intf:broadcast({links, Node, R, Links}, Intf),
                     Map1 = map:update(Node, Links, Map),
-                    router(Name, N, Hist1, Intf, Table, Map1);
+                    Table1 = dijkstra:table(intf:list(Intf), Map1),
+                    router(Name, N, Hist1, Intf, Table1, Map1);
                 old ->
                     router(Name, N, Hist, Intf, Table, Map)
             end;
@@ -90,7 +314,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             io:format("~w: received message ~p from ~w~n", [Name, Message, From]),
             router(Name, N, Hist, Intf, Table, Map);
         {route, To, From, Message} ->
-            io:format("~w: routing message (~p)", [Name, Message]),
+            io:format("~w: Routing from ~p to ~p~n", [Name, From, To]),
             case dijkstra:route(To, Table) of
                 {ok, Gw} ->
                     case intf:lookup(Gw, Intf) of
@@ -111,6 +335,10 @@ router(Name, N, Hist, Intf, Table, Map) ->
             Table1 = dijkstra:table(intf:list(Intf), Map),
             router(Name, N, Hist, Intf, Table1, Map);
         broadcast ->
+% <<<<<<< Updated upstream
+% =======
+%             io:format("Broadcasting from ~p~n", [Name]),
+% >>>>>>> Stashed changes
             Message = {links, Name, N, intf:list(Intf)},
             intf:broadcast(Message, Intf),
             router(Name, N+1, Hist, Intf, Table, Map);
