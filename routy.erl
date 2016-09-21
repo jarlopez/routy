@@ -279,9 +279,19 @@ router(Name, N, Hist, Intf, Table, Map) ->
             {ok, Down} = intf:name(Ref, Intf),
             io:format("~w: exit recived from ~w~n", [Name, Down]),
             Intf1 = intf:remove(Down, Intf),
-% <<<<<<< Updated upstream
-            router(Name, N, Hist, Intf1, Table, Map);
-% =======
+
+            Map1 = map:update(Down, [], Map),
+            Table1 = dijkstra:table(intf:list(Intf1), Map1),
+
+            Hist1 = hist:drop(Down, Hist),
+
+            % Update link-state
+            Message = {links, Name, N, intf:list(Intf1)},
+            intf:broadcast(Message, Intf1),
+
+
+            % Update Map, Table
+            router(Name, N+1, Hist1, Intf1, Table1, Map1);
 
 %             % Update table with removed interface/node
 %             Table1 = dijkstra:table(intf:list(Intf1), Map),
