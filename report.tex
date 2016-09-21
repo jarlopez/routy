@@ -1,0 +1,84 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{hyperref}
+
+%opening
+\title{Seminar Report: Routy -- A Small Routing Protocol}
+\author{Johan Mickos \\ johanmi@kth.se}
+\date{\today{}}
+
+\begin{document}
+
+\maketitle
+\newpage
+
+\section{Introduction}
+
+• describe the structure of a link-state routing protocol
+    "Link-state algorithms are sometimes characterized informally as each router, "telling the world about its neighbours."
+• describe how a consistent view is maintained
+    Each router informs the network about its neighbors
+• reflect on the problems related to network failures
+    Packets get dropped when routers become disconnected
+    Erlang allows for monitoring other processes. As a result, a router who has a direct link to another will know when the router drops from the network (according to Erlang VM's rules and definitions)
+
+\section{Main Problems and Solutions}
+\subsection{Security Issues}
+Rogue router
+\subsection{Direct Routing to Neighbors}
+As the assignment is presented, there is no way for a router to know how to route to its immediate neighbors after they have been added to its list of interfaces.
+
+This is due to the fact that adding a new unidirectional link \textit{does not automatically} add the new node to the map and thus the routing table is never updated with the direct link.
+
+This is solved by allowing each router to update its \texttt{Map} with the fact that it (\texttt{Name}) can reach the new node (\texttt{Node}):
+\begin{verbatim}
+router(Name, N, Hist, Intf, Table, Map) ->
+    receive
+        {add, Node, Pid} ->
+            Ref = erlang:monitor(process,Pid),
+            Intf1 = intf:add(Node, Ref, Pid, Intf),
+
+            % Also update table
+            Map1 = map:update(Name, [Node], Map),
+            Table1 = dijkstra:table(intf:list(Intf1), Map1),
+            router(Name, N + 1, Hist, Intf1, Table1, Map1);
+        % ...
+    end.
+\end{verbatim}
+
+\subsection{Dropping from the Network}
+When a node is dropped from the network, its neighbors are alerted (thanks to Erlang).
+
+Restoring the node, however, is far more involved. This is because its neighbors maintain a history of the dropped node's messages. When a node restarts, its internal counter will be _lower_ than the counters of its neighbors (assuming the network has been "alive" for some time). Thus, any broadcasts being sent out from the previously dropped node will be ignore _until_ the node's internal counter exceeds the counters at its neighbors. To mitigate this, neighbors can reset or remove the history entries from dropped nodes:
+
+\begin{verbatim}
+-module(hist).
+drop(Node, History) ->
+    lists:keydelete(Node, 1, History).
+\end{verbatim}
+
+\begin{verbatim}
+-module(hist).
+drop(Node, History) ->
+    lists:keydelete(Node, 1, History).
+\end{verbatim}
+
+\begin{verbatim}
+{'DOWN', Ref, process, _, _} ->
+    % ...
+    Hist1 = hist:drop(Down, Hist),
+
+    % Update link-state
+    Message = {links, Name, N, intf:list(Intf1)},
+    intf:broadcast(Message, Intf1),
+\end{verbatim}
+
+When a node drops from the network, its alerted neighbors will forget its history. Then, if/when the node rejoins the network and re-establishes its links, its old neighbors will be able to respond to the new link states.
+
+One edge case this does not address is when the dropped node establishes links to _new_ neighbors, who may still have a higher history counter for the given node. They will continue ignoring the node until its counter is greater than its previous history counter.
+
+\section{Evaluation}
+\section{Conclusion}
+\end{document}
