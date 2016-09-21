@@ -36,7 +36,7 @@ test_lookup() ->
                     {ok, c}),
     test:print_case("Lookup not found",
                     interface:lookup(foo, [{x, y, z}, {a, b, c}]),
-                    not_found).
+                    notfound).
 
 test_ref() ->
     io:format("test_ref()~n"),
@@ -45,7 +45,7 @@ test_ref() ->
                     {ok, b}),
     test:print_case("Lookup not found",
                     interface:ref(foo, [{x, y, z}, {a, b, c}]),
-                    not_found).
+                    notfound).
 
 test_name() ->
     io:format("test_name()~n"),
@@ -54,7 +54,7 @@ test_name() ->
                     {ok, a}),
     test:print_case("Lookup not found",
                     interface:name(foo, [{x, y, z}, {a, b, c}]),
-                    not_found).
+                    notfound).
 
 test_list() ->
     io:format("test_list()~n"),

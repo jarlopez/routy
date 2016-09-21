@@ -25,7 +25,7 @@ lookup(Name, Intf) ->
         {Name, _Ref, Pid} ->
             {ok, Pid};
         false ->
-            not_found
+            notfound
     end.
 
 ref(Name, Intf) ->
@@ -33,7 +33,7 @@ ref(Name, Intf) ->
         {Name, Ref, _Pid} ->
             {ok, Ref};
         false ->
-            not_found
+            notfound
     end.
 
 name(Ref, Intf) ->
@@ -41,7 +41,7 @@ name(Ref, Intf) ->
         {Name, Ref, _Pid} ->
             {ok, Name};
         false ->
-            not_found
+            notfound
     end.
 
 list(Intf) ->

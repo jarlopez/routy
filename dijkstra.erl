@@ -72,5 +72,5 @@ route(Node, Table) ->
         {Node, Gateway} ->
             {ok, Gateway};
         false ->
-            not_found
+            notfound
     end.

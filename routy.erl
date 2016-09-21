@@ -95,10 +95,10 @@ router(Name, N, Hist, Intf, Table, Map) ->
                     case intf:lookup(Gw, Intf) of
                         {ok, Pid} ->
                             Pid ! {route, To, From, Message};
-                        not_found ->
+                        notfound ->
                             ok
                     end;
-                not_found ->
+                notfound ->
                     ok % :(
             end,
             router(Name, N, Hist, Intf, Table, Map);
