@@ -11,7 +11,7 @@ test_new() ->
     test:print_case("", hist:new(a), [{a, 0}]).
 
 test_update() ->
-    History = hist:new(a)
+    History = hist:new(a),
     io:format("test_update()~n"),
     test:print_case("Add to empty",
                     interface:add(a, b, c, []),

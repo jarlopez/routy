@@ -7,6 +7,7 @@
         ,router/6
         ,send_status/1
         ,bootstrap/0
+        ,restore/1
         ,cleanup/0
         ]).
 

@@ -19,5 +19,5 @@ update(Node, N, History) ->
                     old
             end;
         false ->
-            {new, lists:keystore(Node, 1, History, {Node, 0})}
+            {new, lists:keystore(Node, 1, History, {Node, N})}
     end.

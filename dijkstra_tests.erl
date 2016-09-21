@@ -70,5 +70,5 @@ test_route() ->
     io:format("test_table()~n"),
     test:print_case("",
         dijkstra:route(berlin, Table),
-        madrid
+        {ok, madrid}
     ).
