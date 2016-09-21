@@ -3,10 +3,14 @@
 -export([
          new/1
         ,update/3
+        ,drop/2
         ]).
 
 new(Node) ->
     [{Node, 0}].
+
+drop(Node, History) ->
+    lists:keydelete(Node, 1, History).
 
 %TODO Verify below functionality
 update(Node, N, History) ->
