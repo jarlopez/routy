@@ -70,6 +70,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
             Intf1 = intf:remove(Down, Intf),
             router(Name, N, Hist, Intf1, Table, Map);
         {status, From} ->
+            io:format("Received status from: ~p~n", [From]),
             From ! {status, {Name, N, Hist, Intf, Table, Map}},
             router(Name, N, Hist, Intf, Table, Map);
         status ->
@@ -99,6 +100,7 @@ router(Name, N, Hist, Intf, Table, Map) ->
                             ok
                     end;
                 notfound ->
+                    io:format("Dropping packet from ~p to ~p~n", [From, To]),
                     ok % :(
             end,
             router(Name, N, Hist, Intf, Table, Map);
