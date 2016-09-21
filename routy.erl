@@ -8,6 +8,7 @@
         ,send_status/1
         ,bootstrap/0
         ,restore/1
+        ,restore/2
         ,cleanup/0
         ]).
 
@@ -18,8 +19,11 @@ stop(Node) ->
     Node ! stop,
     unregister(Node).
 
+restore(Node, Force) ->
+    restore(Node, 'spion@2001:6b0:1:1041:e888:f9d6:6ce6:bf413', Force).
+
 restore(Node) ->
-    restore(Node, 'spion@2001:6b0:1:1041:e888:f9d6:6ce6:bf413').
+    restore(Node, 'spion@2001:6b0:1:1041:e888:f9d6:6ce6:bf413', false).
 
 start_all() ->
     start(boston, boston),
@@ -44,7 +48,7 @@ start_all() ->
     ok.
 
 
-restore(Node, Ip) ->
+restore(Node, Ip, Force) ->
     case Node of
         boston ->
             Connections = [austin, new_york, nuuk, reykjavik];
@@ -94,9 +98,20 @@ restore(Node, Ip) ->
     % end,
     % start(Node, Node),
     % Restart dependencies
+    if
+        Force == true ->
+            start(Node, Node);
+        true ->
+            ok
+    end,
     lists:map(fun(El) ->
-        Node ! {add, El, {El, Ip}}
-        % El ! {add, Node, {Node, Ip}}
+        Node ! {add, El, {El, Ip}},
+        if
+            Force == true ->
+                El ! {add, Node, {Node, Ip}};
+            true ->
+                ok
+        end
     end, Connections).
 
 
