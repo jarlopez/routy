@@ -1,4 +1,4 @@
-\documentclass[a4paper, 11pt]{article}
+\documentclass[a4paper, 10pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{graphicx}
 \usepackage{url}
@@ -15,49 +15,47 @@
 \newpage
 
 \section{Introduction}
+The purpose of this assignment is to become famililarized with the concept of link-state routing protocols and implement a Dijkstra-based one to simulate a real-world network of switches.
 
-• describe the structure of a link-state routing protocol
-    "Link-state algorithms are sometimes characterized informally as each router, "telling the world about its neighbours."
-• describe how a consistent view is maintained
-    Each router informs the network about its neighbors
-• reflect on the problems related to network failures
-    Packets get dropped when routers become disconnected
-    Erlang allows for monitoring other processes. As a result, a router who has a direct link to another will know when the router drops from the network (according to Erlang VM's rules and definitions)
+Link-state algorithms rely on each switch (or router, in the case of the Internet) informing the network of its neighbors by broadcasting a link-state message. These link-state messages flood the network to establish a map of the network at each router. Once the network topology is stable, each router calculates a routing table from itself to all other nodes in the network.
+
+This report also considers the cases of nodes dropping out of the network and restructuring/recalculating the network map and routing tables.
 
 \section{Main Problems and Solutions}
-\subsection{Security Issues}
-Rogue router
+The main problem solved in this assignment is to implement a Dijkstra-based link-state routing protocol. The steps to accomplish this are quite simple:
+
+\begin{enumerate}
+    \item Determinining neighbors of each node
+    \item Distributing the neighbors with a link-state advertisement
+    \item Building the map at each node
+    \item Calculating the shortest paths (using Dijkstra's algorithm in this case)
+    \item Populating the routing tables
+\end{enumerate}
+
 \subsection{Direct Routing to Neighbors}
 As the assignment is presented, there is no way for a router to know how to route to its immediate neighbors after they have been added to its list of interfaces.
 
 This is due to the fact that adding a new unidirectional link \textit{does not automatically} add the new node to the map and thus the routing table is never updated with the direct link.
 
-This is solved by allowing each router to update its \texttt{Map} with the fact that it (\texttt{Name}) can reach the new node (\texttt{Node}):
+This is solved by allowing each router to broadcast a link-state message to itself (and its neighbors) when new links are added:
 \begin{verbatim}
+-module(routy).
 router(Name, N, Hist, Intf, Table, Map) ->
     receive
         {add, Node, Pid} ->
             Ref = erlang:monitor(process,Pid),
             Intf1 = intf:add(Node, Ref, Pid, Intf),
 
-            % Also update table
-            Map1 = map:update(Name, [Node], Map),
-            Table1 = dijkstra:table(intf:list(Intf1), Map1),
-            router(Name, N + 1, Hist, Intf1, Table1, Map1);
-        % ...
-    end.
+            % Broadcast router's links to self and neighbors
+            Message = {links, Name, N, intf:list(Intf1)},
+            intf:broadcast(Message, Intf1),
+            router(Name, N+1, Hist, Intf1, Table, Map);
 \end{verbatim}
 
 \subsection{Dropping from the Network}
 When a node is dropped from the network, its neighbors are alerted (thanks to Erlang).
 
-Restoring the node, however, is far more involved. This is because its neighbors maintain a history of the dropped node's messages. When a node restarts, its internal counter will be _lower_ than the counters of its neighbors (assuming the network has been "alive" for some time). Thus, any broadcasts being sent out from the previously dropped node will be ignore _until_ the node's internal counter exceeds the counters at its neighbors. To mitigate this, neighbors can reset or remove the history entries from dropped nodes:
-
-\begin{verbatim}
--module(hist).
-drop(Node, History) ->
-    lists:keydelete(Node, 1, History).
-\end{verbatim}
+Restoring the node, however, is far more involved. This is because its neighbors maintain a history of the dropped node's messages. When a node restarts, its internal counter will be lower than the counters of its neighbors (assuming the network has been "alive" for some time). Thus, any broadcasts being sent out from the previously dropped node will be ignore until the node's internal counter exceeds the counters at its neighbors. To mitigate this, neighbors can reset or remove the history entries from dropped nodes:
 
 \begin{verbatim}
 -module(hist).
@@ -77,8 +75,46 @@ drop(Node, History) ->
 
 When a node drops from the network, its alerted neighbors will forget its history. Then, if/when the node rejoins the network and re-establishes its links, its old neighbors will be able to respond to the new link states.
 
-One edge case this does not address is when the dropped node establishes links to _new_ neighbors, who may still have a higher history counter for the given node. They will continue ignoring the node until its counter is greater than its previous history counter.
-
 \section{Evaluation}
+\subsection{Simulating the World}
+When building the graph shown below using the above-mentioned improvements, the network has an initial flood phase where all nodes broadcast their link-states and progressively build up a complete map and routing tables.
+
+\includegraphics[width=\textwidth,height=\textheight,keepaspectratio]{world.png}
+
+Once the startup phase is completed, sending packets between nodes routes according to the smallest number of "hops" to the destination. Sending packets from Boston to Berlin, for example, will go through the expected sequence:
+
+\begin{center}
+\textit{Boston $\rightarrow$ Reykjavik $\rightarrow$ Oslo $\rightarrow$ Copenhagen $\rightarrow$ Berlin}
+\end{center}
+
+\begin{verbatim}
+1> boston ! {send, berlin, "message"}.
+[route]    boston        Routing from boston to berlin
+[route]    reykjavik     Routing from boston to berlin
+[route]    oslo          Routing from boston to berlin
+[route]    copenhagen    Routing from boston to berlin
+[route]    berlin        Received message message from boston
+\end{verbatim}
+
+When Oslo is dropped from the network, its neighbors will be alerted of the dropped Erlang process (as they are monitoring it) and remove Oslo from their link-state messages. They will then broadcast the new link-state throughout the network and force an update of the map and the routing tables.
+
+Once this process has finished, sending the same packet from Boston to Berlin will take the new shortest path
+
+\begin{center}
+\textit{Boston $\rightarrow$ Nuuk $\rightarrow$ Trondheim $\rightarrow$ Rovaniemi $\rightarrow$ Helsinki $\rightarrow$ Moscow $\rightarrow$ Berlin}
+\end{center}
+
+\begin{verbatim}
+> boston ! {send, berlin, "message"}.
+[route]    boston        Routing from boston to berlin
+[route]    nuuk          Routing from boston to berlin
+[route]    trondheim     Routing from boston to berlin
+[route]    rovaniemi     Routing from boston to berlin
+[route]    helsinki      Routing from boston to berlin
+[route]    moscow        Routing from boston to berlin
+[route]    berlin        Received message "message" from boston
+\end{verbatim}
+
 \section{Conclusion}
+The outcome of this assignment was very successful. With the small code improvements, the network is able to recover and recompute the shortest paths when critical nodes drop out (of course, if the only connection between two forests in the network graph is removed, packets will be dropped).
 \end{document}
