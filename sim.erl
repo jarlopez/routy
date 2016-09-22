@@ -48,7 +48,7 @@ restore(Node, Ip, Force) ->
         reykjavik ->
             Connections = [nuuk, boston, oslo, trondheim];
         nuuk ->
-            Connections = [boston, reykjavik];
+            Connections = [boston, reykjavik, trondheim];
         trondheim ->
             Connections = [reykjavik, oslo, rovaniemi];
         oslo ->
